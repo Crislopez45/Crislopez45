@@ -1,0 +1,21 @@
+#Prueba de conexión via nrpe
+#Los argumentos son el host y el archivo comandos_uvas.txt(donde están guardados los comandos nrpe)
+#
+#!/bin/bash
+
+DIA=`date +"%d/%m/%Y"`
+HORA=`date +"%H:%M"`
+
+host=$1
+
+i=200
+for ((i=1; i<10; i++));do
+
+while IFS= read -r line
+do
+echo -n "$DIA   $HORA --> "    &&  /root/nagios2/check_nrpe -H $1   -c "$line"
+sleep 2s
+done < comandos_uvas.txt
+
+echo " "
+done
