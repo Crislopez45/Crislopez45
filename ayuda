@@ -1,0 +1,545 @@
+Administrador de tareas en windows: 
+taskmgr.exe
+
+****************************************************************
+Limpiar inodes
+
+find /tmp -xdev -printf '%h\n' | sort | uniq -c | sort -k 1 -n
+
+****************************************************************
+eliminar lineas vacías: grep -Ev '^#|^$' /etc/login.txt
+
+Eliminar todos los archivos excepto: 
+find . -type f -not -name 'prueba.cfg' -print0 | xargs -0 -I {} rm -v {}
+
+matar varios procesos con kill:
+kill $(ps -ef | grep apache | awk '{print $2}');
+kill $(ps -ef | grep proceso | awk '{print $2}');
+
+Reemplazar texto en varios archivos: 
+grep -rl check_wi . | xargs sed -i 's/check_winservice_no_ssl/check_win/g'
+
+
+grep -rl 'http:/wiki/' . | xargs sed -i  's%http:/wiki/%http:/192.168.0.1y/wiki/%g'
+
+Reemplazar texto en varios archivos 
+sed -i 's/host1,host2/host1/g'  nombre_archivo.cfg
+
+Extraer la lista de direcciones de correo electrónico de un archivo:
+
+ grep -Eio '[a-z0-9._-]+@[a-z0-9.-]+[a-z]{2,4}' fichero.txt
+******************************************************************************************
+
+****************************************************************
+Aplicar política SElinux para que sea leído por el demonio snmpd
+chcon -t snmpd_log_t nombrearchivo
+
+restorecon -v './sesionesSOAP.pl'
+chcon -t bin_t './sesionesSOAP.pl'
+
+
+ls -Z muestra el contexto SElinux aplicado al archivo
+Aplicar el contexto al directorio home/res/* 
+para que todos los archivos hereden el tipo snmpd_log_t y este pueda ser leído por snmpd
+******************************************************************************************
+En consultas lentas a bases de datos se puede usar /*+PARALLEL(4)*/ para forzar la consulta
+************************************************
+
+sudo /bin/vi /etc/snmp/snmpd.conf
+
+sudo /sbin/service snmpd restart
+
+sudo /usr/sbin/setenforce 0
+
+Servicio ntp windows server
+net stop w32time && net start w32time
+******************************************************************************************
+ getenforce: Obtener estado del SELinux
+Setenforce *: Establecer estado del SElinux
+******************************************************************************************
+
+control de log, cargar en el snmpd: 
+
+al momento de la configuración del archivo cfg en /home/noc/bricosoft/bc_logmon/confs si se necesita controlar un archivo con fecha:
+LOCAL_PATH=/home/mts/MTS_PAR0/logs/[date]/
+LOG_FILE=services.log
+
+extend          alertlog_pushve /bin/cat /home/nocuser/bricosoft/bc_logmon/res/alertlog.brf
+
+******************************************************************************************
+
+Copiar archivos de un servidor a otro con scp
+
+scp -rp nocuser@mts-promo01:/home/nocuser/bricosoft/puerto_ws.pl /home/nocuser/bricosoft
+
+
+scp -rp nocuser@10.114.12.167:/home/nocuser/bricosoft/ .  
+
+scp noc@mts-app03:/home/noc/bricosoft/bc_logmon/ora_logmon_services_MTS.pl /home/noc/bricosoft/bc_logmon
+
+******************************************************************************************
+Comando para el crontab
+
+Para alertlog
+*/5 * * * * /home/nocuser/bricosoft/bc_logmon/ora_logmon.pl /home/nocuser/bricosoft/bc_logmon/confs/alertlog.cfg > /dev/null 2>&1
+
+Para Log
+*/5 * * * * /home/nocuser/bricosoft/bc_logmon/ora_logmon.pl /home/nocuser/bricosoft/bc_logmon/confs/internet-increible-web.cfg > /dev/null 2>&1
+
+#Comprime el log de la app del dia anterior
+0 1 * * * /usr/bin/find /var/log/wildfly/ -type f -mtime -1 ! -name "*.gz" ! -name "server.log" -exec /usr/bin/gzip {} \;
+#
+#Borra los logs de mas de 180 dias
+#15 0 * * * /usr/bin/find /var/log/wildfly/ -type f -name "*2022*" -mtime +180 -exec /usr/bin/rm -f {} \;
+
+Borra logs superiores a los útlimos 5 días: 
+ 00 23 * * * /usr/bin/find /var/log/nagios/archives/ -iname "*.log" -type f -mtime -5 -exec rm {} \; 
+
+Comprime logs
+00 23 * * * /usr/bin/find /var/log/tomcat-smp-service/archives/ -iname "*.log" -type f -mtime -2 -exec gzip {} \;
+
+00 23 * * * /usr/bin/find /var/log/tomcat-roaming-like-home/ -type f -name "*" ! -name "*.gz" -mtime +1 -exec /usr/bin/gzip {} \;
+
+extend nombre_extend /bin/cat /home/nocuser/bricosoft/bc_logmon/res/InternetIncreible.brf
+
+setfacl -m u:nocuser:r /oracle/app/diag/rdbms/carl/carl/aler.log
+******************************************************************************************
+Verificar conexión mediante protocolo snmp, 
+si o sí debe estar configurado la comunidad en el host para monitoreo básico.
+
+snmpwalk puede ir acompañado en lugar de system el comando hrStorageTable para verificar la memoria swap
+
+hrStorageTable
+hrDeviceTable
+hrProcessorTable
+hrNetworkTable
+hrPrinterTable
+hrDiskStorageTable
+hrPartitionTable
+hrFSTable
+hrSWRunTable
+hrSWRunPerfTable
+hrSWInstalledTable
+
+para controlar disco hrPartitionTable 
+
+snmpwalk -On -v1 -c C0l3ct4P3rf p-vdi-isql-01 system
+
+snmpwalk -On -v2c -c C0l3ct4P3rf prd-facturador-01.telecel.net.py  system
+
+snmpwalk -On -v2c -c C0l3ct4P3rf  p-exp-db-01.telecel.net.py hrSWRunTable
+
+
+El siguiente comando permite consultar la tabla de extend
+snmpwalk -v2c -c C0l3ct4P3rf p-noc-nagios-it.sec.telecel.net.py  NET-SNMP-EXTEND-MIB::nsExtendObjects
+
+
+Verificar si la partición se muestra por snmpwalk 
+snmpwalk -On -v2c -c C0l3ct4P3rf  p-viafirma-01.sec.telecel.net.py dskTable o hrFSTable .1.3.6.1.4.1.2021.9 | grep /home
+
+Eliminé la directiva includeAllDisks ya que eso no ayudó y cuando recorría manualmente el árbol del disco en busca de rutas, específicamente, veo los 3 puntos de montaje (1 local y 2 iscsi):
+# snmpwalk -v 1 -c public 127.0.0.1 .1.3.6.1.4.1.2021.9.1.2
+UCD-SNMP-MIB::dskPath.1 = STRING: /
+UCD-SNMP-MIB::dskPath.2 = STRING: /mnt/ahsay
+UCD-SNMP-MIB::dskPath.3 = STRING: /mnt/ahsayrps
+Mientras tanto, utilicé el sensor SNMP personalizado para capturar el espacio libre de cada punto de montaje:
+# snmpwalk -v 1 -c public 127.0.0.1 .1.3.6.1.4.1.2021.9.1.7.2
+UCD-SNMP-MIB::dskAvail.2 = INTEGER: 2147483647
+
+Con este comando/plugin también se puede obtener datos de la tabla de particiones:
+ /usr/local/nagios/libexec/check_snmp_storage.pl -H p-lucas-db01.telecel.net.py -C C0l3ct4P3rf -m D -w 80 -c 82 -v -2
+****************************************************************************************
+Configuración ntp
+server 10.114.11.66 iburst
+server 10.114.75.66 iburst
+
+
+******************************************************************************************
+Control por comando en linux
+
+extend conexiones_contra_in_gw01 /home/noc/bricosoft/conexiones_contra_in-gw01.pl
+
+En p-epo-db se configuró el extend puerto_upd /usr/local/nagios/libexec/check_udp_extend.pl dentro del mandrilo y en epo db se configuró el control udp donde pasamos los datos del plugin dentro de los argumentos
+
+******************************************************************************************
+Control de proceso
+
+Para la configuración de proceso, se debe verificar cual es el proceso ps -ef ! grep nombre_proceso
+para verificar el proceso  /home/nocuser/bricosoft/extends/check_process.pl 'cadena obtenido al ejecutar el comando anterior'
+
+se puede listar el proceso y luego copiar el string:  ps -fea | grep nombreproceso
+
+extend          ins_upms-VE  /home/nocuser/bricosoft/extends/check_process.pl 'string'
+
+extend 	puerto_upd	/home/root/
+
+Script:
+/home/nocuser/bricosoft/check_control_colas.pl
+
+#!/usr/bin/perl -X
+my $CMD=$ARGV[0];
+my $test1='java -Djava.ext.dirs=/usr/local/lothar/SPM/lib/ lothar.queue.SizeDtaq ' . "'$CMD'";
+my $test=`$test1`;
+$test=~/.+\=\s([0-9]{1,})*/;
+print $1;
+
+Control por comando en linux
+crear un archivo con el nombre conexiones_contra_om-gw01.pl, dar todos los permisos y escribir en el archivo
+en el snmpd.conf
+extend conexiones_contra_in_gw01 /home/noc/bricosoft/conexiones_contra_in-gw01.pl 
+
+el script:
+!/usr/bin/perl -X
+my $com1='netstat -na |grep 2775 -wc';
+my $imp_result=`$com1`;
+print $imp_result;
+
+Control en perl:
+#!/usr/bin/perl
+use strict;
+use warnings;
+#if (@ARGV !=1){
+#die "Uso: $0 <nombre_de_servicio>\n";
+#}
+#variables
+my $nombreservicio=nagios
+#my $nombreservicio=$ARGV[0];
+# Obtén el resultado de la ejecución del comando
+my $result = `ps aux | grep -v grep | grep $nombreservicio`;
+
+# Verifica si el servicio está en ejecución
+if ($result =~/$nombreservicio/) {
+    print "OK - El servicio está en ejecución\n";
+    exit 0; # Estado OK
+} else {
+    print "CRITICAL - El servicio no está en ejecución\n";
+    exit 2; # Estado CRITICAL
+}
+***************************************************************************
+Monitoreo de proceso específico
+/home/nocuser/bricosoft/extends/check_process_especifico.pl '/usr/bin/containerd'
+
+#!/usr/bin/perl -X
+my $AGUJA=$ARGV[0];
+my $COMANDO='/bin/pgrep -afx "' . $AGUJA . '" | /usr/bin/wc -l';
+my $PAJAR=`$COMANDO`;
+print $PAJAR;
+
+******************************************************************************************
+Monitoreo de proceso específico
+con pgrep también puedo agregarle el argumento -c para contar los procesos encontrados.
+
+/home/nocuser/bricosoft/extends/check_process_especifico.pl '/usr/bin/containerd'
+
+#!/usr/bin/perl -X
+my $AGUJA=$ARGV[0];
+my $COMANDO='/bin/pgrep -afx "' . $AGUJA . '" | /usr/bin/wc -l';
+my $PAJAR=`$COMANDO`;
+print $PAJAR;
+
+******************************************************************************************
+Control de alertlog
+extend          alertlog_eportal /bin/cat /home/nocuser/bricosoft/bc_logmon/res/alertlog.brf
+extend          alertlog /bin/cat /home/nocuser/bricosoft/bc_logmon/res/alertlog.brf
+******************************************************************************************
+Control de ultima escritura
+
+extend           Prd_Facturador_Ultima_Escritura  /home/nocuser/bricosoft/bc_logmon/check_last_folder_input.pl /var/impresor/log/out.log
+
+extend U_E_Rest_ncenter	/home/nocuser/bricosoft/bc_logmon/check_last_folder_input.pl /var/log/tomcat-ncenter-rest/ncenter-rest-driver-war.log
+
+******************************************************************************************
+CONSULTA DE BD DE PRODUCCION
+select open_mode from v$database;
+****************************************************************
+./check_exec_query_x_porcentaje.pl get_query_db_sheldon_solicitud_pin_personal.sql get_connect_db_mpdb03-roshi.cfg :2 :4 ORACLE N N N
+
+***************************************************************************
+Copiar configuración:
+Primero crear el host
+/opt/bricosoft/nagiosql/copy_service.pl host_a_copiar host_nuevo % Y
+
+******************************************************************************************
+Receta mágica para que funcione el EXTEND con SELinux
+
+setsebool -P allow_postfix_local_write_mail_spool=1
+
+******************************************************************************************
+
+getenforce para verificar el estado del SELinux
+sudo setenforce 0 para que se active el permissive
+
+******************************************************************************************
+crontab -e para ingresar a la configuración del crontab
+crontab -l para ver lo que está cargado en el crontab
+******************************************************************************************
+#habilita la tabla de particiones
+includeAllDisks 10%
+disk /var 10%
+******************************************************************************************
+Controles básicos
+p-ad-wca-01: Windows - CPU, Disco, Memory, Ping, Uptime
+jbapp01,  p-noc-cm-db01 - Linux - p-api-psql-db-01
+
+******************************************************************
+Verificar consumo de memoria en linux:
+ps aux --width 30 --sort -rss | head
+
+************************************************************************************************
+usuario Administrador pass GZ7sibBR
+**********************************************************************
+Cambiar usuario de archivo chown lothart archivo
+Cambiar grupo de archivo chgrp lothart archivo
+
+**************************************************
+ SYMTRAX
+ggs
+Produccion tigo
+sp gssrbg 
+f11 para ver por fecha
+poner 2 en todas las opociones del dia
+save(*yes) dev(prtnoc)
+con f5 y f11 vemos el estado de la impresion
+
+Ver los trabajos no culminados - 
+wrkjobscde ftpmerlin - El proceso no corre en horario de control sox
+wrkjobscde MIG_VTSBBD - El proceso no corre en horario de control sox
+
+opción 5 para ver mas detalles
+ 
+Inicializar cinta
+wrkmedbrm vol(mf**)
+
+******************************************************************
+PARA VER USUARIO SI ESTA HABILITADO
+-----------------------------------
+wrkusrprf usrprf(expngh)
+******************************************************************
+habilitar usuario
+Enabled expngh
+CALL PGM(OPER/CHGPASS) PARM('TCLONA' 'TIGO2022')
+******************************************************************
+Configuración de firewall
+firewall-cmd --add-port 161/udp --permanent
+
+firewall-cmd --reload
+Listar reglas del iptables: iptables -nvL
+Editar archivo: /etc/sysconfig/iptables y agregar lo siguiente para permitir las consultas snmp por udp/tcp
+-A INPUT -s 10.86.129.104/32 -p udp -m udp --dport 161 -j ACCEPT
+-A INPUT -s 10.86.129.104/32 -p tcp -m tcp --dport 1521 -m state --state NEW -j ACCEPT
+
+-A INPUT -s 10.16.21.10/32 -p udp -m udp --dport 161 -j ACCEPT
+-A INPUT -s 10.16.21.10/32 -p tcp -m tcp --dport 1521 -m state --state NEW -j ACCEPT
+
+******************************************************************
+Asignar permisos a un archivo
+chmod 664 archivo.txt
+rw- rw- r-- archivo.txt
+
+r (read) – 4
+w (write) – 2
+x (execute) – 1
+
+– – – – – – – – –	000
+r——–			400
+r—r–r–			444
+rw——			600
+rw-r–r–			644
+rw-rw-rw-		666
+rwx——			700
+rwxr-x—			750
+rwxr-xr-x		755
+rwxrwxrwx		777
+
+Otra manera de asignar permisos:
+setfacl -m u:nocuser:r /oracle/app/oracle/diag/rdbms/crmprod/CRMPROD/trace/alert_CRMPROD.log
+
+Para controlar un disco
+df  -h --output=pcent /home/viafirma |  grep [0-9] | sed -e 's/[^0-9]//g'
+
+***********************************************
+Windows
+Usa chequeo nrpe p-mss-mpdb-01
+
+El equipo p-sn-mid/p-exp-db-01  tiene un control que utiliza el plugin check_snmp_proccess_win
+***********************************************
+Agregar color a la terminal
+alias cp='cp -i'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+alias l.='ls -d .* --color=auto'
+alias ll='ls -l --color=auto'
+alias ls='ls --color=auto'
+alias mv='mv -i'
+alias rm='rm -i'
+
+***********************************************
+dentro de nrpe.cfg agregar 
+include_dir=/etc/nrpe.d/
+
+Para agregar comando nrpe 
+crear un archivo con lo siguiente -  /etc/nrpe.d/cpnr_service.cfg: 
+command[check_cpnr_service]=/usr/local/bin/check_service -s nwreglocal
+command[check_dns_tigo060]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.16.210.16 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_dc01]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.16.210.8 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_tigo061]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.16.251.20 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_dc02]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.255.30.100 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_tigo29]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.18.100.201 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_dc01_1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.11.91 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_tigo061_1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.16.251.50 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_ipa1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.11.66 -H dummy-reg.sec.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_ipa2]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.75.66 -H dummy-reg.sec.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_infra1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.16.210.63 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_infra2]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.16.210.65 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_W2k16_dc01]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.11.91 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+command[check_dns_W2k16_dc02]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.75.70 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 4 -t 5
+# Nuevos chequeos 15/06/2020
+command[check_dns_sec1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.11.66 -H dummy-reg.sec.telecel.net.py. -a 10.114.11.66 -w 2 -c 3 -t 5
+command[check_dns_sec2]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.75.66 -H dummy-reg.sec.telecel.net.py. -a 10.114.11.66 -w 2 -c 3 -t 5
+command[check_dns_ad1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.11.91 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 3 -t 5
+command[check_dns_ad2]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.75.70 -H dummy-address.telecel.net.py. -a 10.114.11.66 -w 2 -c 3 -t 5
+command[check_dns_ha1]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.11.73 -H prx-osb02.ha.telecel.net.py -w 2 -c 3 -t 5
+command[check_dns_ha2]=/usr/lib64/nagios/plugins/check_dns -q A -s 10.114.75.73 -H prx-osb02.ha.telecel.net.py -w 2 -c 3 -t 5
+command[check_dns_ext1]=/usr/lib64/nagios/plugins/check_dns -q A -s 186.16.16.16 -H www.google.com -w 2 -c 3 -t 10
+command[check_dns_ext2]=/usr/lib64/nagios/plugins/check_dns -q A -s 186.17.17.17 -H www.google.com -w 2 -c 3 -t 10
+[External Alias]
+alias_cpu=checkCPU warn=80 crit=90 time=5m time=1m time=30s
+alias_cpu_ex=checkCPU warn=$ARG1$ crit=$ARG2$ time=5m time=1m time=30s
+alias_mem=checkMem MaxWarn=80% MaxCrit=90% ShowAll=long type=physical type=virtual type=paged type=page
+alias_up=checkUpTime MinWarn=1d MinWarn=1h
+
+alias_disk=CheckDriveSize MinWarn=10% MinCrit=5% CheckAll FilterType=FIXED
+alias_disk_loose=CheckDriveSize MinWarn=10% MinCrit=5% CheckAll FilterType=FIXED ignore-unreadable
+alias_volumes=CheckDriveSize MinWarn=10% MinCrit=5% CheckAll=volumes FilterType=FIXED
+alias_volumes_loose=CheckDriveSize MinWarn=10% MinCrit=5% CheckAll=volumes FilterType=FIXED ignore-unreadable 
+
+alias_service=checkServiceState CheckAll
+alias_service_ex=checkServiceState CheckAll "exclude=Net Driver HPZ12" "exclude=Pml Driver HPZ12" exclude=stisvc
+alias_process=checkProcState "$ARG1$=started"
+alias_process_stopped=checkProcState "$ARG1$=stopped"
+alias_process_count=checkProcState MaxWarnCount=$ARG2$ MaxCritCount=$ARG3$ "$ARG1$=started"
+alias_process_hung=checkProcState MaxWarnCount=1 MaxCritCount=1 "$ARG1$=hung"
+
+alias_event_log=CheckEventLog file=application file=system MaxWarn=1 MaxCrit=1 "filter=generated gt -2d AND severity NOT IN ('success', 'informational') AND source != 'SideBySide'" truncate=800 unique descriptions "syntax=%severity%: %source%: %message% (%count%)"
+
+alias_file_size=CheckFiles "filter=size > $ARG2$" "path=$ARG1$" MaxWarn=1 MaxCrit=1 "syntax=%filename% %size%" max-dir-depth=10
+alias_file_age=checkFile2 filter=out "file=$ARG1$" filter-written=>1d MaxWarn=1 MaxCrit=1 "syntax=%filename% %write%"
+
+alias_sched_all=CheckTaskSched "filter=exit_code ne 0" "syntax=%title%: %exit_code%" warn=>0
+alias_sched_long=CheckTaskSched "filter=status = 'running' AND most_recent_run_time < -$ARG1$" "syntax=%title% (%most_recent_run_time%)" warn=>0
+alias_sched_task=CheckTaskSched "filter=title eq '$ARG1$' AND exit_code ne 0" "syntax=%title% (%most_recent_run_time%)" warn=>0
+
+alias_updates=check_updates -warning 0 -critical 0
+
+check_ok=CheckOK Everything is fine!
+
+[Wrapped Scripts]
+;check_test_vbs=check_test.vbs /arg1:1 /arg2:1 /variable:1
+;check_test_ps1=check_test.ps1 arg1 arg2
+;check_test_bat=check_test.bat arg1 arg2
+;check_battery=check_battery.vbs
+;check_printer=check_printer.vbs
+;check_updates=check_updates.vbs
+
+**************************************************************************************
+
+Para controlar por nrpe:
+./check_nrpe -H P-GNS-GVP-02.TELECEL.NET.PY -n -2 -c CheckServiceState -a LCA64
+
+en el cliente agregar
+use_ssl=0
+
+**************************************************************************************
+PLSQL Serial
+product code： 4vkjwhfeh3ufnqnmpr9brvcuyujrx3n3le 
+serial Number：226959 
+password: xs374ca
+
+**************************************************************************************
+#Control de colas
+extend          EVENTSSC      /home/nocuser/bricosoft/check_control_colas.pl 'EVENTSSC'
+extend          SSCSMSRESP      /home/nocuser/bricosoft/check_control_colas.pl 'SSCSMSRESP'
+
+**************************************************************************************
+
+Control de cantidad de archivos
+[Script Wrappings]
+vbs=cscript.exe //T:30 //NoLogo scripts\lib\wrapper.vbs %SCRIPT% %ARGS%
+ps1=cmd /c echo scripts\%SCRIPT% %ARGS%; exit($lastexitcode) | powershell.exe -command -
+bat=scripts\%SCRIPT% %ARGS%
+
+[External Scripts]
+;check_es_long=scripts\long.bat
+;check_es_ok=scripts\ok.bat
+;check_es_nok=scripts\nok.bat
+;check_vbs_sample=cscript.exe //T:30 //NoLogo scripts\check_vb.vbs
+;check_powershell_warn=cmd /c echo scripts\powershell.ps1 | powershell.exe -command -
+check_filecount=cscript.exe //NoLogo scripts\check_files.vbs $ARG1$
+check_timegap=cscript.exe //NoLogo scripts\check_timegap.vbs $ARG1$
+check_filecountx=cscript.exe //NoLogo scripts\check_filesx.vbs $ARG1$
+
+**************************************************************************************
+Configurar login por ldap
+<Directory "/data/nagios4/share">
+#Redirigir al nuevo nagios
+#Redirect permanent / http://p-noc-nagios-it.sec.telecel.net.py/
+#  SSLRequireSSL
+   Options None
+   AllowOverride None
+   Order allow,deny
+   Allow from all
+#  Order deny,allow
+#  Deny from all
+#  Allow from 127.0.0.1
+               AuthzLDAPAuthoritative off
+                AuthType Basic
+                AuthName "Usa tu Usuario de Red"
+                AuthBasicProvider ldap
+                #AuthLDAPURL "ldap://svr-tigo061.telecel.net.py:3268/dc=telecel,dc=net,dc=py?sAMAccountName?sub?(objectClass=*)"
+                AuthLDAPURL "ldap://dc.telecel.net.py:3268/dc=telecel,dc=net,dc=py?sAMAccountName?sub?(objectClass=*)"
+                AuthLDAPBindDN "noc-ldap@telecel.net.py"
+                AuthLDAPBindPassword "PassTigo2012!"
+                Require ldap-group cn=GRP_Telecel,OU=Grupos de Usuarios,dc=telecel,dc=net,dc=py
+                Require ldap-group cn=GRP_NOC,OU=Grupos de Usuarios,dc=telecel,dc=net,dc=py
+                Require ldap-group cn=GRP_NOC_IT,OU=Grupos de Usuarios,dc=telecel,dc=net,dc=py
+</Directory>
+
+**************************************************************************************
+Script de chequeo SNMP:
+#!/bin/sh
+
+#**************************************
+#******* Done by: ITS-INFOCOM *********
+#**************************************
+
+output_logs="/home/porgoa/service_status/output.log"
+
+# current date
+d=$(date)
+#name of the service
+service_name=$1
+
+# This line stores the number of processes belong to $service_name
+processes=$(ps aux | grep -v grep | grep -v "$0" | grep $service_name | wc -l)
+
+# If the number of processes is less than 0, that means that the service is fallen and this prints 0 (NOT Running),
+# on the other wise, this prints 1 (Running).
+if [[ $processes > 0 ]]; then
+        echo "1"
+else
+        echo "0"
+        echo "${d} -> WARNING: /${service_name}/ is NOT running" >> $output_logs
+fi
+
+**************************************************************************************
+/usr/local/sbin/ipsec status | grep -c none)
+if [ $ISDOWN -eq 1 ]; then
+	for CONEXION in $(/usr/local/sbin/ipsec status | egrep "con[123456789]" | cut -d"{" -f1 | sort -u); do
+		/usr/local/sbin/ipsec up ${CONEXION}
+	done
+fi
+snmpwalk -On -v2c -c C0l3ct4P3rf 10.114.37.5 dskTable 
+./check_snmp_process.pl -H 10.114.37.5 -C C0l3ct4P3rf  -2c -p 161 -t 40 -n "MALLOC: ipsec" -c 0 -w 0
+show ipsec tunnel
+
